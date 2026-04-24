@@ -74,11 +74,18 @@ Phase 2 builds the resume upload and processing pipeline:
 
 ### `GET /candidates/{id}`
 
-Returns current candidate status. `status` is:
-- `"processing"` if `embedding IS NULL`
-- `"ready"` if `embedding IS NOT NULL`
+Returns current candidate status.
 
-Returns `404` if not found or soft-deleted.
+**Response body:**
+```json
+{
+  "id": "<uuid>",
+  "status": "processing | ready",
+  "created_at": "<iso8601>"
+}
+```
+
+`status` is `"processing"` if `embedding IS NULL`, `"ready"` otherwise. Returns `404` if not found or soft-deleted.
 
 ---
 
@@ -112,7 +119,7 @@ Returns `404` if not found or soft-deleted.
 3. resume_parser.extract_text(data, filename) → plain text
 4. Call Groq llama-3.1-8b-instant via llm.chat_completion with parse_resume.txt prompt
 5. Validate JSON output with ParsedResume Pydantic model
-   → on failure: retry once with stricter prompt
+   → on failure: retry once with a prompt that prepends "Respond with valid JSON only, no prose" and reduces max_tokens to 1024
    → on second failure: persist structured_jsonb={"parse_error": true}, continue
 6. Re-encrypt contact blob with phone + address added (if found by LLM)
 7. embed_text(resume_text) via OpenAI text-embedding-3-small
@@ -162,7 +169,7 @@ ALTER TABLE candidates
 **`Candidate` model:** add `consent_version: Mapped[str]` column.
 
 **`CandidateRepo` new methods:**
-- `update_after_parse(candidate_id, *, resume_text, structured_jsonb, embedding, contact_jsonb_encrypted)` — updates the row post-parse
+- `update_after_parse(tenant_id, candidate_id, *, resume_text, structured_jsonb, embedding, contact_jsonb_encrypted)` — updates the row post-parse; `tenant_id` is an explicit filter, not the RLS session variable
 - `get_status(tenant_id, candidate_id)` → `{id, status}` where status is `"processing"` if `embedding IS NULL` else `"ready"`
 
 **`MatchRepo` new method:**
