@@ -6,7 +6,7 @@ import uuid
 from datetime import datetime
 from typing import Annotated
 
-from fastapi import APIRouter, Depends, File, Form, HTTPException, UploadFile
+from fastapi import APIRouter, Depends, File, Form, HTTPException, Response, UploadFile
 from pydantic import BaseModel
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -114,12 +114,12 @@ async def get_candidate(
     return CandidateResponse(**info)
 
 
-@router.delete("/{candidate_id}", status_code=204)
+@router.delete("/{candidate_id}", status_code=204, response_class=Response)
 async def delete_candidate(
     candidate_id: uuid.UUID,
     ctx: AuthContext = Depends(get_current_user),
     db: AsyncSession = Depends(get_db),
-) -> None:
+) -> Response:
     repo = CandidateRepo(db)
     candidate = await repo.get(ctx.tenant_id, candidate_id)
     if candidate is None:
@@ -140,3 +140,4 @@ async def delete_candidate(
         entity_type="candidate",
         entity_id=candidate_id,
     )
+    return Response(status_code=204)
