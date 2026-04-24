@@ -6,7 +6,7 @@ from datetime import datetime
 
 from pgvector.sqlalchemy import Vector
 from sqlalchemy import (
-    BYTEA,
+    TIMESTAMP,
     CheckConstraint,
     ForeignKey,
     Index,
@@ -14,7 +14,9 @@ from sqlalchemy import (
     Text,
     UniqueConstraint,
 )
-from sqlalchemy.dialects.postgresql import JSONB, TIMESTAMPTZ, UUID
+from sqlalchemy.dialects.postgresql import BYTEA, JSONB, UUID
+
+TIMESTAMPTZ = TIMESTAMP(timezone=True)
 from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column, relationship
 from sqlalchemy.sql import func
 
