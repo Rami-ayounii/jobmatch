@@ -54,3 +54,39 @@ async def test_get_candidate_processing(client, unique_form):
 async def test_get_candidate_not_found(client):
     resp = await client.get(f"/candidates/{uuid.uuid4()}")
     assert resp.status_code == 404
+
+
+@pytest.mark.asyncio
+async def test_delete_candidate_returns_204(client, unique_form):
+    with patch("app.api.candidates.process_resume") as mock_task, \
+         patch("app.api.candidates.storage.upload_resume", return_value="t/c/r.pdf"):
+        mock_task.delay = lambda *a, **kw: None
+        post = await client.post("/candidates", data=unique_form, files=_pdf())
+    cid = post.json()["id"]
+
+    with patch("app.api.candidates.delete_r2_object") as mock_del:
+        mock_del.delay = lambda *a, **kw: None
+        resp = await client.delete(f"/candidates/{cid}")
+    assert resp.status_code == 204
+
+
+@pytest.mark.asyncio
+async def test_get_after_delete_is_404(client, unique_form):
+    with patch("app.api.candidates.process_resume") as mock_task, \
+         patch("app.api.candidates.storage.upload_resume", return_value="t/c/r.pdf"):
+        mock_task.delay = lambda *a, **kw: None
+        post = await client.post("/candidates", data=unique_form, files=_pdf())
+    cid = post.json()["id"]
+
+    with patch("app.api.candidates.delete_r2_object") as mock_del:
+        mock_del.delay = lambda *a, **kw: None
+        await client.delete(f"/candidates/{cid}")
+
+    resp = await client.get(f"/candidates/{cid}")
+    assert resp.status_code == 404
+
+
+@pytest.mark.asyncio
+async def test_delete_nonexistent_returns_404(client):
+    resp = await client.delete(f"/candidates/{uuid.uuid4()}")
+    assert resp.status_code == 404

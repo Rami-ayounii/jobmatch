@@ -112,3 +112,31 @@ async def get_candidate(
     if info is None:
         raise HTTPException(status_code=404, detail="Candidate not found")
     return CandidateResponse(**info)
+
+
+@router.delete("/{candidate_id}", status_code=204)
+async def delete_candidate(
+    candidate_id: uuid.UUID,
+    ctx: AuthContext = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+) -> None:
+    repo = CandidateRepo(db)
+    candidate = await repo.get(ctx.tenant_id, candidate_id)
+    if candidate is None:
+        raise HTTPException(status_code=404, detail="Candidate not found")
+
+    r2_key = candidate.r2_key
+    deleted = await repo.soft_delete(ctx.tenant_id, candidate_id)
+    if not deleted:
+        raise HTTPException(status_code=404, detail="Candidate not found")
+
+    await MatchRepo(db).anonymize_candidate(ctx.tenant_id, candidate_id)
+    delete_r2_object.delay(r2_key)
+
+    await AuditRepo(db).log(
+        ctx.tenant_id,
+        "candidate_deleted",
+        actor_id=ctx.user_id,
+        entity_type="candidate",
+        entity_id=candidate_id,
+    )
