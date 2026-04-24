@@ -34,3 +34,23 @@ async def test_post_candidate_dedup_returns_200(client, unique_form):
     assert r1.status_code == 202
     assert r2.status_code == 200
     assert r1.json()["id"] == r2.json()["id"]
+
+
+@pytest.mark.asyncio
+async def test_get_candidate_processing(client, unique_form):
+    with patch("app.api.candidates.process_resume") as mock_task, \
+         patch("app.api.candidates.storage.upload_resume", return_value="t/c/r.pdf"):
+        mock_task.delay = lambda *a, **kw: None
+        post = await client.post("/candidates", data=unique_form, files=_pdf())
+    cid = post.json()["id"]
+
+    resp = await client.get(f"/candidates/{cid}")
+    assert resp.status_code == 200
+    assert resp.json()["status"] == "processing"
+    assert resp.json()["id"] == cid
+
+
+@pytest.mark.asyncio
+async def test_get_candidate_not_found(client):
+    resp = await client.get(f"/candidates/{uuid.uuid4()}")
+    assert resp.status_code == 404

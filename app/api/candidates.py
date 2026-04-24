@@ -100,3 +100,15 @@ async def upload_candidate(
     return CandidateResponse(
         id=candidate.id, status="processing", created_at=candidate.created_at
     )
+
+
+@router.get("/{candidate_id}", response_model=CandidateResponse)
+async def get_candidate(
+    candidate_id: uuid.UUID,
+    ctx: AuthContext = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+) -> CandidateResponse:
+    info = await CandidateRepo(db).get_status(ctx.tenant_id, candidate_id)
+    if info is None:
+        raise HTTPException(status_code=404, detail="Candidate not found")
+    return CandidateResponse(**info)
