@@ -9,10 +9,21 @@ import uuid
 from datetime import UTC, datetime
 from typing import Any
 
-from sqlalchemy import select, update
+from pydantic import BaseModel
+from sqlalchemy import select, text as sa_text, update
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.db.models import AuditEvent, Candidate, Invite, Job, Match, Tenant, User
+
+
+class CandidateRetrievalResult(BaseModel):
+    candidate_id: uuid.UUID
+    resume_text: str
+    structured_jsonb: dict[str, Any]
+    cosine_score: float
+    text_score: float
+    combined_score: float
+
 
 # ── Tenants ───────────────────────────────────────────────────────────────────
 
@@ -185,6 +196,53 @@ class CandidateRepo:
             "created_at": row.created_at,
         }
 
+    async def retrieve_hybrid(
+        self,
+        tenant_id: uuid.UUID,
+        *,
+        query_embedding: list[float],
+        query_text: str,
+        top_k: int = 50,
+    ) -> list[CandidateRetrievalResult]:
+        vec_str = "[" + ",".join(str(x) for x in query_embedding) + "]"
+        rows = await self._db.execute(
+            sa_text("""
+                SELECT
+                    id,
+                    resume_text,
+                    structured_jsonb,
+                    1 - (embedding <=> :query_vec::vector(1536)) AS cosine_score,
+                    COALESCE(word_similarity(:query_text, resume_text), 0.0) AS text_score,
+                    0.7 * (1 - (embedding <=> :query_vec::vector(1536))) +
+                    0.3 * COALESCE(word_similarity(:query_text, resume_text), 0.0)
+                        AS combined_score
+                FROM candidates
+                WHERE
+                    tenant_id = :tenant_id
+                    AND deleted_at IS NULL
+                    AND embedding IS NOT NULL
+                ORDER BY combined_score DESC
+                LIMIT :top_k
+            """),
+            {
+                "query_vec": vec_str,
+                "query_text": query_text,
+                "tenant_id": str(tenant_id),
+                "top_k": top_k,
+            },
+        )
+        return [
+            CandidateRetrievalResult(
+                candidate_id=row.id,
+                resume_text=row.resume_text,
+                structured_jsonb=row.structured_jsonb,
+                cosine_score=float(row.cosine_score),
+                text_score=float(row.text_score),
+                combined_score=float(row.combined_score),
+            )
+            for row in rows
+        ]
+
 
 # ── Jobs ──────────────────────────────────────────────────────────────────────
 
@@ -207,6 +265,7 @@ class JobRepo:
         title: str,
         description_text: str,
         structured_jsonb: dict[str, Any] | None = None,
+        embedding: list[float] | None = None,
     ) -> Job:
         job = Job(
             tenant_id=tenant_id,
@@ -214,6 +273,7 @@ class JobRepo:
             title=title,
             description_text=description_text,
             structured_jsonb=structured_jsonb or {},
+            embedding=embedding,
         )
         self._db.add(job)
         await self._db.flush()
