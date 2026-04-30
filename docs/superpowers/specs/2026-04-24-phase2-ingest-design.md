@@ -95,7 +95,6 @@ Returns current candidate status.
 
 ```
 1. CandidateRepo.soft_delete(tenant_id, candidate_id) → sets deleted_at
-   → 404 if not found or already deleted
 2. MatchRepo.anonymize_candidate(tenant_id, candidate_id)
    → replaces name/justification with "[removed]" in shortlist_jsonb across all matches
 3. Dispatch Celery task: ingest.delete_r2_object(r2_key)

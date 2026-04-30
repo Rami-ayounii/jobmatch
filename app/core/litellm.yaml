@@ -1,0 +1,25 @@
+model_list:
+  - model_name: reasoner
+    litellm_params:
+      model: anthropic/claude-sonnet-4-6
+      api_key: "os.environ/ANTHROPIC_API_KEY"
+
+  - model_name: reasoner-fallback
+    litellm_params:
+      model: openai/gpt-4o
+      api_key: "os.environ/OPENAI_API_KEY"
+
+  - model_name: parser
+    litellm_params:
+      model: groq/llama-3.1-8b-instant
+      api_key: "os.environ/GROQ_API_KEY"
+
+  - model_name: parser-fallback
+    litellm_params:
+      model: openai/gpt-4o-mini
+      api_key: "os.environ/OPENAI_API_KEY"
+
+litellm_settings:
+  drop_params: true
+  request_timeout: 60
+  num_retries: 2
