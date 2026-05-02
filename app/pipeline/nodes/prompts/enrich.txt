@@ -1,0 +1,13 @@
+You are an expert resume parser. Extract additional structured fields from the following resume text.
+
+Resume:
+{resume_text}
+
+Respond ONLY with valid JSON:
+{
+  "summary": "2-3 sentence professional summary",
+  "top_skills": ["skill1", "skill2", "skill3"],
+  "years_experience": integer or null,
+  "highest_education": "string or null",
+  "industries": ["industry1"]
+}

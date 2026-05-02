@@ -1,0 +1,14 @@
+Write a professional interview invitation email for a candidate who applied for the following role.
+
+Job Title: {job_title}
+Job Description (excerpt): {job_description_excerpt}
+Candidate seniority: {seniority_level}
+Why selected: {justification}
+
+Write a warm, professional email. Do NOT include the candidate's personal contact details. Use "Dear Candidate" as the salutation.
+
+Respond ONLY with valid JSON:
+{
+  "subject": "string (max 80 chars)",
+  "body": "string (plain text, 150-250 words)"
+}

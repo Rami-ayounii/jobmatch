@@ -1,0 +1,11 @@
+You are an expert HR consultant. Given a job description, extract a scoring rubric with 4-6 criteria that should be used to evaluate candidate resumes.
+
+Job Description:
+{job_description}
+
+Respond ONLY with valid JSON matching this schema:
+{
+  "criteria": [
+    {"name": "string", "weight": float (0-1, weights must sum to 1.0), "description": "string"}
+  ]
+}
