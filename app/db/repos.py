@@ -439,6 +439,34 @@ class InviteRepo:
         )
         return result.scalar_one_or_none() is not None
 
+    async def list_by_status(
+        self, tenant_id: uuid.UUID, status: str | None = None
+    ) -> list[Invite]:
+        q = select(Invite).where(Invite.tenant_id == tenant_id)
+        if status is not None:
+            q = q.where(Invite.status == status)
+        q = q.order_by(Invite.created_at.desc())
+        result = await self._db.execute(q)
+        return list(result.scalars().all())
+
+    async def mark_sent(
+        self, tenant_id: uuid.UUID, invite_id: uuid.UUID, resend_message_id: str
+    ) -> None:
+        await self._db.execute(
+            update(Invite)
+            .where(Invite.tenant_id == tenant_id, Invite.id == invite_id)
+            .values(status="sent", resend_message_id=resend_message_id)
+        )
+
+    async def mark_failed(
+        self, tenant_id: uuid.UUID, invite_id: uuid.UUID, error: str
+    ) -> None:
+        await self._db.execute(
+            update(Invite)
+            .where(Invite.tenant_id == tenant_id, Invite.id == invite_id)
+            .values(status="failed", rejected_reason=error[:500])
+        )
+
 
 # ── Audit events ──────────────────────────────────────────────────────────────
 
