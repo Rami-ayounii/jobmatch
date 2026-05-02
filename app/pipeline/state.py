@@ -63,6 +63,6 @@ class PipelineState(TypedDict, total=False):
     validation_errors: list[str]
     loop_count: int
     draft_invites: list[InviteDraft]
-    agent_trace: list[dict[str, Any]]
+    agent_trace: list[ToolCallTrace]
     total_cost_usd: float
     error: str | None
