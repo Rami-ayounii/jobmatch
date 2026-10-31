@@ -3,6 +3,10 @@
 Agentic resume matching for recruiters: post a job, get a shortlist of 5 candidates with cited reasons
 and a draft invite for each, and nothing reaches a candidate until a recruiter approves it.
 
+This is a 2026 rebuild of JobMatch, the candidate-screening platform I first built in 2025 during my internship at
+the Digital Research Center of Sfax (LLM + embeddings, MCP architecture, a fine-tuned Mistral-7B running locally).
+The original README is kept on the [`main`](https://github.com/Rami-ayounii/jobmatch/tree/main) branch.
+
 ## How a match runs
 
 A 9-node LangGraph pipeline (`app/pipeline/`):
